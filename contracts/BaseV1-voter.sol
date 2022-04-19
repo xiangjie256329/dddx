@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
+import "hardhat/console.sol";
 
 library Math {
     function min(uint a, uint b) internal pure returns (uint) {
@@ -20,6 +21,7 @@ interface ve {
     function balanceOfNFT(uint) external view returns (uint);
     function isApprovedOrOwner(address, uint) external view returns (bool);
     function ownerOf(uint) external view returns (address);
+    //NEW_ADD  returns (bool);
     function transferFrom(address, address, uint) external returns (bool);
     function attach(uint tokenId) external;
     function detach(uint tokenId) external;
@@ -65,24 +67,24 @@ contract BaseV1Voter {
 
     address public immutable _ve; // the ve token that governs these contracts
     address public immutable factory; // the BaseV1Factory
-    address internal immutable base;
-    address public immutable gaugefactory;
+    address internal immutable base; //erc20代币
+    address public immutable gaugefactory; //
     address public immutable bribefactory;
     uint internal constant DURATION = 7 days; // rewards are released over 7 days
     address public minter;
 
     uint public totalWeight; // total voting weight
 
-    address[] public pools; // all pools viable for incentives
-    mapping(address => address) public gauges; // pool => gauge
-    mapping(address => address) public poolForGauge; // gauge => pool
-    mapping(address => address) public bribes; // gauge => bribe
-    mapping(address => int256) public weights; // pool => weight
-    mapping(uint => mapping(address => int256)) public votes; // nft => pool => votes
-    mapping(uint => address[]) public poolVote; // nft => pools
-    mapping(uint => uint) public usedWeights;  // nft => total voting weight of user
-    mapping(address => bool) public isGauge;
-    mapping(address => bool) public isWhitelisted;
+    address[] public pools; // all pools viable for incentives lp交易对
+    mapping(address => address) public gauges; // pool => gauge lp->奖池
+    mapping(address => address) public poolForGauge; // gauge => pool 奖池->lp
+    mapping(address => address) public bribes; // gauge => bribe 奖池->贿赂
+    mapping(address => int256) public weights; // pool => weight lp->权重
+    mapping(uint => mapping(address => int256)) public votes; // nft => pool => votes tokenId->lp->投票
+    mapping(uint => address[]) public poolVote; // nft => pools tokenId->lp
+    mapping(uint => uint) public usedWeights;  // nft => total voting weight of user tokenId->总投票权重
+    mapping(address => bool) public isGauge;    //判断地址是否是奖池
+    mapping(address => bool) public isWhitelisted; //判断是否是白名单
 
     event GaugeCreated(address indexed gauge, address creator, address indexed bribe, address indexed pool);
     event Voted(address indexed voter, uint tokenId, int256 weight);
@@ -94,7 +96,7 @@ contract BaseV1Voter {
     event Attach(address indexed owner, address indexed gauge, uint tokenId);
     event Detach(address indexed owner, address indexed gauge, uint tokenId);
     event Whitelisted(address indexed whitelister, address indexed token);
-    event Initialize(address indexed minter);
+    event Initialize(address indexed minter);//NEW_ADD
 
     constructor(address __ve, address _factory, address  _gauges, address _bribes) {
         _ve = __ve;
@@ -115,16 +117,16 @@ contract BaseV1Voter {
     }
 
     function initialize(address[] memory _tokens, address _minter) external {
-        require(msg.sender == minter, '!minter');
+        require(msg.sender == minter, '!minter');//只有minter可以初始化白名单
         for (uint i = 0; i < _tokens.length; i++) {
-            _whitelist(_tokens[i]);
+            _whitelist(_tokens[i]);//支持去重,不用担心重复添加
         }
-        minter = _minter;
-        emit Initialize(minter);
+        minter = _minter;//顺带可以修改minter移交权限
+        emit Initialize(minter);//NEW_ADD
     }
 
     function listing_fee() public view returns (uint) {
-        return (erc20(base).totalSupply() - erc20(_ve).totalSupply()) / 200;
+        return (erc20(base).totalSupply() - erc20(_ve).totalSupply()) / 200; //(总量-锁仓总量)/200
     }
 
     function reset(uint _tokenId) external {
@@ -133,8 +135,8 @@ contract BaseV1Voter {
         ve(_ve).abstain(_tokenId);
     }
 
-    function _reset(uint _tokenId) internal {
-        address[] storage _poolVote = poolVote[_tokenId];
+    function _reset(uint _tokenId) internal {//清空tokenId之前的投票
+        address[] storage _poolVote = poolVote[_tokenId];//先拿到之前投的池子
         uint _poolVoteCnt = _poolVote.length;
         int256 _totalWeight = 0;
 
@@ -143,44 +145,44 @@ contract BaseV1Voter {
             int256 _votes = votes[_tokenId][_pool];
 
             if (_votes != 0) {
-                _updateFor(gauges[_pool]);
-                weights[_pool] -= _votes;
-                votes[_tokenId][_pool] -= _votes;
-                if (_votes > 0) {
+                _updateFor(gauges[_pool]);//根据lp拿到奖池地址,然后在改票前更新奖池收益
+                weights[_pool] -= _votes;//移除原投票权重
+                votes[_tokenId][_pool] -= _votes;//移除原投票
+                if (_votes > 0) {//原投票大于0,则可以从贿赂池收取奖励,同时更新总更新权重
                     IBribe(bribes[gauges[_pool]])._withdraw(uint256(_votes), _tokenId);
                     _totalWeight += _votes;
                 } else {
-                    _totalWeight -= _votes;
+                    _totalWeight -= _votes;//原投票小于0,则没有贿赂收益,但总更新权重还是会加上其正值
                 }
-                emit Abstained(_tokenId, _votes);
+                emit Abstained(_tokenId, _votes);//链上标记tokenId弃权
             }
         }
-        totalWeight -= uint256(_totalWeight);
-        usedWeights[_tokenId] = 0;
-        delete poolVote[_tokenId];
+        totalWeight -= uint256(_totalWeight);//更新投票总权重
+        usedWeights[_tokenId] = 0;//奖tokenId的使用权重置0
+        delete poolVote[_tokenId];//删除tokenId的投票lp
     }
 
-    function poke(uint _tokenId) external {
-        address[] memory _poolVote = poolVote[_tokenId];
+    function poke(uint _tokenId) external {//计算之前的权重
+        address[] memory _poolVote = poolVote[_tokenId];//根据tokenId拿到所有投票的lp池
         uint _poolCnt = _poolVote.length;
         int256[] memory _weights = new int256[](_poolCnt);
 
         for (uint i = 0; i < _poolCnt; i ++) {
-            _weights[i] = votes[_tokenId][_poolVote[i]];
+            _weights[i] = votes[_tokenId][_poolVote[i]];//拿到之前的投票权重
         }
 
         _vote(_tokenId, _poolVote, _weights);
     }
 
     function _vote(uint _tokenId, address[] memory _poolVote, int256[] memory _weights) internal {
-        _reset(_tokenId);
+        _reset(_tokenId);//先把tokenId之前投票的收益结算,并清空原投票lp,权重等
         uint _poolCnt = _poolVote.length;
-        int256 _weight = int256(ve(_ve).balanceOfNFT(_tokenId));
+        int256 _weight = int256(ve(_ve).balanceOfNFT(_tokenId));//获取tokenId的最新投票权重,随时间增加,解锁的权重会变多
         int256 _totalVoteWeight = 0;
         int256 _totalWeight = 0;
         int256 _usedWeight = 0;
 
-        for (uint i = 0; i < _poolCnt; i++) {
+        for (uint i = 0; i < _poolCnt; i++) {//更新权重累加,负数变正
             _totalVoteWeight += _weights[i] > 0 ? _weights[i] : -_weights[i];
         }
 
@@ -188,43 +190,45 @@ contract BaseV1Voter {
             address _pool = _poolVote[i];
             address _gauge = gauges[_pool];
 
-            if (isGauge[_gauge]) {
+            if (isGauge[_gauge]) {//如果是奖池就更新
                 int256 _poolWeight = _weights[i] * _weight / _totalVoteWeight;
-                require(votes[_tokenId][_pool] == 0, 'Wrong vote');
+                console.logInt(_poolWeight);
+                require(votes[_tokenId][_pool] == 0, 'Wrong vote');//以前没投过,或者清空了
                 require(_poolWeight != 0, '_poolWeight is zero');
-                _updateFor(_gauge);
+                _updateFor(_gauge);//更新奖池
 
-                poolVote[_tokenId].push(_pool);
+                poolVote[_tokenId].push(_pool);//token
 
                 weights[_pool] += _poolWeight;
                 votes[_tokenId][_pool] += _poolWeight;
-                if (_poolWeight > 0) {
+                if (_poolWeight > 0) {//增加贿赂奖池的总权重,反对票则不减少原有tokenId的权重
                     IBribe(bribes[_gauge])._deposit(uint256(_poolWeight), _tokenId);
                 } else {
                     _poolWeight = -_poolWeight;
                 }
-                _usedWeight += _poolWeight;
+                _usedWeight += _poolWeight;//更新权重
                 _totalWeight += _poolWeight;
                 emit Voted(msg.sender, _tokenId, _poolWeight);
             }
         }
-        if (_usedWeight > 0) ve(_ve).voting(_tokenId);
-        totalWeight += uint256(_totalWeight);
-        usedWeights[_tokenId] = uint256(_usedWeight);
+        if (_usedWeight > 0) ve(_ve).voting(_tokenId);//标记为已投票
+        totalWeight += uint256(_totalWeight); //更新合约totalWeight
+        usedWeights[_tokenId] = uint256(_usedWeight);//更新合约tokenId的已使用权重
     }
 
+    //一个nft可以投多个池子
     function vote(uint tokenId, address[] calldata _poolVote, int256[] calldata _weights) external {
-        require(ve(_ve).isApprovedOrOwner(msg.sender, tokenId), 'not approve or owner');
+        require(ve(_ve).isApprovedOrOwner(msg.sender, tokenId), 'not approve or owner');//先判断msg.sender是否是tokenId的owner或approver
         require(_poolVote.length == _weights.length, 'l error');
         _vote(tokenId, _poolVote, _weights);
     }
 
-    function whitelist(address _token, uint _tokenId) external {
+    function whitelist(address _token, uint _tokenId) external {//给token添加白名单,需要tokenId里面锁仓的平台币足够多
         if (_tokenId > 0) {
             require(msg.sender == ve(_ve).ownerOf(_tokenId), '!owner');
-            require(ve(_ve).balanceOfNFT(_tokenId) > listing_fee(), 'nft insufficient assets');
+            require(ve(_ve).balanceOfNFT(_tokenId) > listing_fee(), 'nft insufficient assets');//如果tokenId大于0,则需要该tokenId的权重大于1/200的流动量
         } else {
-            _safeTransferFrom(base, msg.sender, minter, listing_fee());
+            _safeTransferFrom(base, msg.sender, minter, listing_fee());//如果没有这么多的权重,直接给minter这么多平台币也是可以的
         }
 
         _whitelist(_token);
@@ -232,25 +236,25 @@ contract BaseV1Voter {
 
     function _whitelist(address _token) internal {
         require(!isWhitelisted[_token], 'whitelisted');
-        isWhitelisted[_token] = true;
+        isWhitelisted[_token] = true;//标记一下
         emit Whitelisted(msg.sender, _token);
     }
 
-    function createGauge(address _pool) external returns (address) {
+    function createGauge(address _pool) external returns (address) {//创建奖池
         require(gauges[_pool] == address(0x0), "exists");
-        require(IBaseV1Factory(factory).isPair(_pool), "!_pool");
-        (address tokenA, address tokenB) = IBaseV1Core(_pool).tokens();
-        require(isWhitelisted[tokenA] && isWhitelisted[tokenB], "!whitelisted");
-        address _bribe = IBaseV1BribeFactory(bribefactory).createBribe();
-        address _gauge = IBaseV1GaugeFactory(gaugefactory).createGauge(_pool, _bribe, _ve);
+        require(IBaseV1Factory(factory).isPair(_pool), "!_pool");//奖池要先存在
+        (address tokenA, address tokenB) = IBaseV1Core(_pool).tokens();//获取tokenA和tokenB
+        require(isWhitelisted[tokenA] && isWhitelisted[tokenB], "!whitelisted");//tokenA和tokenB必须在白名单
+        address _bribe = IBaseV1BribeFactory(bribefactory).createBribe();//创建贿赂
+        address _gauge = IBaseV1GaugeFactory(gaugefactory).createGauge(_pool, _bribe, _ve);//创建奖池
         erc20(base).approve(_gauge, type(uint).max);
-        bribes[_gauge] = _bribe;
+        bribes[_gauge] = _bribe;//更新数据
         gauges[_pool] = _gauge;
         poolForGauge[_gauge] = _pool;
         isGauge[_gauge] = true;
         _updateFor(_gauge);
         pools.push(_pool);
-        emit GaugeCreated(_gauge, msg.sender, _bribe, _pool);
+        emit GaugeCreated(_gauge, msg.sender, _bribe, _pool);//链上标记
         return _gauge;
     }
 
@@ -282,7 +286,7 @@ contract BaseV1Voter {
 
     uint internal index;
     mapping(address => uint) internal supplyIndex;
-    mapping(address => uint) public claimable;
+    mapping(address => uint) public claimable;//总提现
 
     function notifyRewardAmount(uint amount) external {
         _safeTransferFrom(base, msg.sender, address(this), amount); // transfer the distro in
@@ -313,15 +317,15 @@ contract BaseV1Voter {
         _updateFor(_gauge);
     }
 
-    function _updateFor(address _gauge) internal {
-        address _pool = poolForGauge[_gauge];
-        int256 _supplied = weights[_pool];
+    function _updateFor(address _gauge) internal {//更新奖池可提现收益
+        address _pool = poolForGauge[_gauge];//再通过奖池拿回lp
+        int256 _supplied = weights[_pool];//根据lp拿到总权重
         if (_supplied > 0) {
-            uint _supplyIndex = supplyIndex[_gauge];
-            uint _index = index; // get global index0 for accumulated distro
-            supplyIndex[_gauge] = _index; // update _gauge current position to global position
-            uint _delta = _index - _supplyIndex; // see if there is any difference that need to be accrued
-            if (_delta > 0) {
+            uint _supplyIndex = supplyIndex[_gauge];//拿到奖池的下标
+            uint _index = index; // get global index0 for accumulated distro //获取最新下标
+            supplyIndex[_gauge] = _index; // update _gauge current position to global position //并设置给奖池
+            uint _delta = _index - _supplyIndex; // see if there is any difference that need to be accrued //计算下标差
+            if (_delta > 0) {//根据权重和下标差增加总提现,相当于用户如果想改票,则把之前票的收益先给lp更新一下
                 uint _share = uint(_supplied) * _delta / 1e18; // add accrued difference for each supplied token
                 claimable[_gauge] += _share;
             }
@@ -330,13 +334,13 @@ contract BaseV1Voter {
         }
     }
 
-    function claimRewards(address[] memory _gauges, address[][] memory _tokens) external {
+    function claimRewards(address[] memory _gauges, address[][] memory _tokens) external {//提取奖励
         for (uint i = 0; i < _gauges.length; i++) {
             IGauge(_gauges[i]).getReward(msg.sender, _tokens[i]);
         }
     }
 
-    function claimBribes(address[] memory _bribes, address[][] memory _tokens, uint _tokenId) external {
+    function claimBribes(address[] memory _bribes, address[][] memory _tokens, uint _tokenId) external {//贿赂池提取贿赂
         require(ve(_ve).isApprovedOrOwner(msg.sender, _tokenId), 'Not approve or owner');
         for (uint i = 0; i < _bribes.length; i++) {
             IBribe(_bribes[i]).getRewardForOwner(_tokenId, _tokens[i]);
@@ -357,8 +361,8 @@ contract BaseV1Voter {
     }
 
     function distribute(address _gauge) public lock {
-        IMinter(minter).update_period();
-        _updateFor(_gauge);
+        IMinter(minter).update_period();//一周调用一次,按照每周的发放奖励mint出代币,然后转到voter和ve_dist中
+        _updateFor(_gauge);//更新奖池
         uint _claimable = claimable[_gauge];
         if (_claimable > IGauge(_gauge).left(base) && _claimable / DURATION > 0) {
             claimable[_gauge] = 0;

@@ -3,10 +3,22 @@
   "devDependencies": {
     "@float-capital/solidity-coverage": "^0.7.17",
     "@nomiclabs/hardhat-ethers": "^2.0.3",
+    "@nomiclabs/hardhat-etherscan": "^2.1.1",
+    "@nomiclabs/hardhat-truffle5": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
     "chai": "^4.3.4",
+    "dotenv": "^8.6.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.2",
-    "hardhat": "^2.8.3"
+    "web3": "^1.7.3",
+    "hardhat": "^2.8.2",
+    "hardhat-contract-sizer": "^2.0.3",
+    "hardhat-deploy": "^0.7.0-beta.50",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7",
+    "hardhat-gas-reporter": "^1.0.4"
+  },
+  "dependencies": {
+    "env": "^0.0.2"
   }
 }

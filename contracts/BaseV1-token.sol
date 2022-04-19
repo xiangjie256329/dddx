@@ -20,14 +20,14 @@ contract BaseV1 {
 
     constructor() {
         minter = msg.sender;
-        _mint(msg.sender, 700000e18);
+        _mint(msg.sender, 700000e18);//NEW_ADD
     }
 
     // No checks as its meant to be once off to set minting rights to BaseV1 Minter
     function setMinter(address _minter) external {
         require(msg.sender == minter, '!minter');
         minter = _minter;
-        emit SetMinter(minter);
+        emit SetMinter(minter);//NEW_ADD
     }
 
     function approve(address _spender, uint _value) external returns (bool) {

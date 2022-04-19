@@ -145,6 +145,7 @@ contract BaseV1Router01 {
         return IBaseV1Factory(factory).isPair(pair);
     }
 
+    //估算添加流动性可得到的数量
     function quoteAddLiquidity(
         address tokenA,
         address tokenB,
