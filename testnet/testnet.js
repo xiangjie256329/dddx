@@ -157,7 +157,9 @@ async function Test_BaseV1Voter() {
         let _ve = await BaseV1Voter_contractHandler._ve();
         console.log("_ve:",_ve);
         let gaugefactory = await BaseV1Voter_contractHandler.gaugefactory();
+        let bwhite = await BaseV1Voter_contractHandler.isWhitelisted("0xEd3d9618A850C87D3C22658469357130200e1bb8");
         console.log("gaugefactory:",gaugefactory);
+        console.log("bwhite:",bwhite);
         console.log("successful Test_BaseV1Voter!");        
     } catch (e) {
         console.log("Test_BaseV1Voter err ==>",e);
@@ -180,7 +182,7 @@ async function Test_BaseV1Minter() {
 
 async function main() {
     //Test_BaseV1Minter();
-    //Test_BaseV1Voter();
+    Test_BaseV1Voter();
     //Test_BaseV1Mint();
     //Test_BaseV1();
     //Test_BaseV1GaugeFactory();
