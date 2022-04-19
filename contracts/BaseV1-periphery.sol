@@ -48,7 +48,7 @@ library Math {
     }
 }
 
-interface IWETH {
+interface IWFTM {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
@@ -63,7 +63,7 @@ contract BaseV1Router01 {
     }
 
     address public immutable factory;
-    IWETH public immutable weth;
+    IWFTM public immutable wftm;
     uint internal constant MINIMUM_LIQUIDITY = 10**3;
     bytes32 immutable pairCodeHash;
 
@@ -72,14 +72,14 @@ contract BaseV1Router01 {
         _;
     }
 
-    constructor(address _factory, address _weth) {
+    constructor(address _factory, address _wftm) {
         factory = _factory;
         pairCodeHash = IBaseV1Factory(_factory).pairCodeHash();
-        weth = IWETH(_weth);
+        wftm = IWFTM(_wftm);
     }
 
     receive() external payable {
-        assert(msg.sender == address(weth)); // only accept ETH via fallback from the WETH contract
+        assert(msg.sender == address(wftm)); // only accept ETH via fallback from the WETH contract
     }
 
     function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
@@ -249,31 +249,31 @@ contract BaseV1Router01 {
         liquidity = IBaseV1Pair(pair).mint(to);
     }
 
-    function addLiquidityETH(
+    function addLiquidityFTM(
         address token,
         bool stable,
         uint amountTokenDesired,
         uint amountTokenMin,
-        uint amountETHMin,
+        uint amountFTMMin,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
-        (amountToken, amountETH) = _addLiquidity(
+    ) external payable ensure(deadline) returns (uint amountToken, uint amountFTM, uint liquidity) {
+        (amountToken, amountFTM) = _addLiquidity(
             token,
-            address(weth),
+            address(wftm),
             stable,
             amountTokenDesired,
             msg.value,
             amountTokenMin,
-            amountETHMin
+            amountFTMMin
         );
-        address pair = pairFor(token, address(weth), stable);
+        address pair = pairFor(token, address(wftm), stable);
         _safeTransferFrom(token, msg.sender, pair, amountToken);
-        weth.deposit{value: amountETH}();
-        assert(weth.transfer(pair, amountETH));
+        wftm.deposit{value: amountFTM}();
+        assert(wftm.transfer(pair, amountFTM));
         liquidity = IBaseV1Pair(pair).mint(to);
         // refund dust eth, if any
-        if (msg.value > amountETH) _safeTransferETH(msg.sender, msg.value - amountETH);
+        if (msg.value > amountFTM) _safeTransferFTM(msg.sender, msg.value - amountFTM);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -296,28 +296,28 @@ contract BaseV1Router01 {
         require(amountB >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
     }
 
-    function removeLiquidityETH(
+    function removeLiquidityFTM(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountETHMin,
+        uint amountFTMMin,
         address to,
         uint deadline
-    ) public ensure(deadline) returns (uint amountToken, uint amountETH) {
-        (amountToken, amountETH) = removeLiquidity(
+    ) public ensure(deadline) returns (uint amountToken, uint amountFTM) {
+        (amountToken, amountFTM) = removeLiquidity(
             token,
-            address(weth),
+            address(wftm),
             stable,
             liquidity,
             amountTokenMin,
-            amountETHMin,
+            amountFTMMin,
             address(this),
             deadline
         );
         _safeTransfer(token, to, amountToken);
-        weth.withdraw(amountETH);
-        _safeTransferETH(to, amountETH);
+        wftm.withdraw(amountFTM);
+        _safeTransferFTM(to, amountFTM);
     }
 
     function removeLiquidityWithPermit(
@@ -340,20 +340,20 @@ contract BaseV1Router01 {
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
     }
 
-    function removeLiquidityETHWithPermit(
+    function removeLiquidityFTMWithPermit(
         address token,
         bool stable,
         uint liquidity,
         uint amountTokenMin,
-        uint amountETHMin,
+        uint amountFTMMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountToken, uint amountETH) {
-        address pair = pairFor(token, address(weth), stable);
+    ) external returns (uint amountToken, uint amountFTM) {
+        address pair = pairFor(token, address(wftm), stable);
         uint value = approveMax ? type(uint).max : liquidity;
         IBaseV1Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountETH) = removeLiquidityETH(token, stable, liquidity, amountTokenMin, amountETHMin, to, deadline);
+        (amountToken, amountFTM) = removeLiquidityFTM(token, stable, liquidity, amountTokenMin, amountFTMMin, to, deadline);
     }
 
     // **** SWAP ****
@@ -406,34 +406,34 @@ contract BaseV1Router01 {
         _swap(amounts, routes, to);
     }
 
-    function swapExactETHForTokens(uint amountOutMin, route[] calldata routes, address to, uint deadline)
+    function swapExactFTMForTokens(uint amountOutMin, route[] calldata routes, address to, uint deadline)
     external
     payable
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[0].from == address(weth), 'BaseV1Router: INVALID_PATH');
+        require(routes[0].from == address(wftm), 'BaseV1Router: INVALID_PATH');
         amounts = getAmountsOut(msg.value, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        weth.deposit{value: amounts[0]}();
-        assert(weth.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
+        wftm.deposit{value: amounts[0]}();
+        assert(wftm.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
         _swap(amounts, routes, to);
     }
 
-    function swapExactTokensForETH(uint amountIn, uint amountOutMin, route[] calldata routes, address to, uint deadline)
+    function swapExactTokensForFTM(uint amountIn, uint amountOutMin, route[] calldata routes, address to, uint deadline)
     external
     ensure(deadline)
     returns (uint[] memory amounts)
     {
-        require(routes[routes.length - 1].to == address(weth), 'BaseV1Router: INVALID_PATH');
+        require(routes[routes.length - 1].to == address(wftm), 'BaseV1Router: INVALID_PATH');
         amounts = getAmountsOut(amountIn, routes);
         require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
         _safeTransferFrom(
             routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
         );
         _swap(amounts, routes, address(this));
-        weth.withdraw(amounts[amounts.length - 1]);
-        _safeTransferETH(to, amounts[amounts.length - 1]);
+        wftm.withdraw(amounts[amounts.length - 1]);
+        _safeTransferFTM(to, amounts[amounts.length - 1]);
     }
 
     function UNSAFE_swapExactTokensForTokens(
@@ -447,7 +447,7 @@ contract BaseV1Router01 {
         return amounts;
     }
 
-    function _safeTransferETH(address to, uint value) internal {
+    function _safeTransferFTM(address to, uint value) internal {
         (bool success,) = to.call{value:value}(new bytes(0));
         require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
     }
