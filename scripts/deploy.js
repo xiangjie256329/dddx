@@ -1,4 +1,5 @@
 async function main() {
+  const GasLimit = 10500000;
   const Token = await ethers.getContractFactory("BaseV1");
   const Gauges = await ethers.getContractFactory("BaseV1GaugeFactory");
   const Bribes = await ethers.getContractFactory("BaseV1BribeFactory");
@@ -19,21 +20,24 @@ async function main() {
   console.log("BaseV1BribeFactory address:",bribes.address)
   const core = await Core.deploy();
   console.log("BaseV1Factory address:",core.address)
-  const factory = await Factory.deploy(core.address, wftmAddr);
+  const factory = await Factory.deploy(core.address, wftmAddr,{gasLimit:GasLimit});
   console.log("BaseV1Router01 address:",factory.address)
-  const ve = await Ve.deploy(token.address);
+  const ve = await Ve.deploy(token.address,{gasLimit:GasLimit});
   console.log("contracts/ve.sol:ve address:",ve.address)
-  const ve_dist = await Ve_dist.deploy(ve.address);
+  const ve_dist = await Ve_dist.deploy(ve.address,{gasLimit:GasLimit});
   console.log("contracts/ve_dist.sol:ve_dist address:",ve_dist.address)
-  const voter = await BaseV1Voter.deploy(ve.address, core.address, gauges.address, bribes.address);
+  const voter = await BaseV1Voter.deploy(ve.address, core.address, gauges.address, bribes.address,{gasLimit:GasLimit});
   console.log("BaseV1Voter address:",voter.address)
-  const minter = await BaseV1Minter.deploy(voter.address, ve.address, ve_dist.address);
+  const minter = await BaseV1Minter.deploy(voter.address, ve.address, ve_dist.address,{gasLimit:GasLimit});
   console.log("BaseV1Minter address:",minter.address)
 
-  await token.setMinter(minter.address);
-  await ve.setVoter(voter.address);
-  await ve_dist.setDepositor(minter.address);
-  await voter.initialize([
+  const setMinter = await token.setMinter(minter.address);
+  console.log("setMinter:",setMinter.hash)
+  const setVoter = await ve.setVoter(voter.address);
+  console.log("setVoter:",setVoter.hash)
+  const ve_distResult = await ve_dist.setDepositor(minter.address);
+  console.log("ve_distResult:",ve_distResult.hash)
+  const initResult = await voter.initialize([
     wftmAddr, //
     "0x04068da6c83afcfa0e13ba15a6696662335d5b75",//USD Coin (USDC) 6
     "0x321162Cd933E2Be498Cd2267a90534A804051b11",//Bitcoin (BTC) 8
@@ -64,7 +68,8 @@ async function main() {
     "0xc5e2b037d30a390e62180970b3aa4e91868764cd",//Tarot (TAROT) 18
     "0x10010078a54396F62c96dF8532dc2B4847d47ED3"], //Hundred Finance (HND) 18
     minter.address);
-  await minter.initialize([
+  console.log("initResult:",initResult.hash);  
+  const minterInitResult = await minter.initialize([
     "0xcf53F2b8e93E18A9B36A73d43A928a74a50A85B1",
     "0x07e2aA78C573f7e3C15be6432B0e0911c95Deff6",
     "0x58385B9DfBd691A3da4714548985532E6E4B8693",
@@ -116,8 +121,8 @@ async function main() {
       ethers.BigNumber.from("518240000000000000000000"),
       ethers.BigNumber.from("511920000000000000000000"),
       ethers.BigNumber.from("452870000000000000000000")],
-      ethers.BigNumber.from("100000000000000000000000000"));//100000000
-
+      ethers.BigNumber.from("100000000000000000000000000"),{gasLimit:GasLimit});//100000000
+      console.log("minter initResult:",minterInitResult.hash);
 }
 
 main()

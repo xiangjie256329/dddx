@@ -33,6 +33,13 @@ module.exports = {
     },
     ftmtest: {
       url: "https://rpc.testnet.fantom.network/",
+    },
+    evmos_test: {
+      accounts: ["c0b61d8d53447f54341461f33e67b2aa0d347b96c2f18f525d9b9a8d8b014a63"],
+      chainId: 9000,
+      gas: 3500000,
+      gasPrice: "auto",
+      url: "https://eth.bd.evmos.dev:8545",
     }
   },
 };
