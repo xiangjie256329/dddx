@@ -9,7 +9,7 @@ async function main() {
   const BaseV1Voter = await ethers.getContractFactory("BaseV1Voter");
   const BaseV1Minter = await ethers.getContractFactory("BaseV1Minter");
 
-  const wethAddr = "0xd8Beb25CAeb2E4c537857E015921e41afd7f2C7b"
+  const wftmAddr = "0xd8Beb25CAeb2E4c537857E015921e41afd7f2C7b"
 
   const token = await Token.deploy();
   console.log("BaseV1 address:",token.address)
@@ -19,7 +19,7 @@ async function main() {
   console.log("BaseV1BribeFactory address:",bribes.address)
   const core = await Core.deploy();
   console.log("BaseV1Factory address:",core.address)
-  const factory = await Factory.deploy(core.address, wethAddr);
+  const factory = await Factory.deploy(core.address, wftmAddr);
   console.log("BaseV1Router01 address:",factory.address)
   const ve = await Ve.deploy(token.address);
   console.log("contracts/ve.sol:ve address:",ve.address)
@@ -34,7 +34,7 @@ async function main() {
   await ve.setVoter(voter.address);
   await ve_dist.setDepositor(minter.address);
   await voter.initialize([
-    wethAddr,
+    wftmAddr, //
     "0x04068da6c83afcfa0e13ba15a6696662335d5b75",//USD Coin (USDC) 6
     "0x321162Cd933E2Be498Cd2267a90534A804051b11",//Bitcoin (BTC) 8
     "0x8d11ec38a3eb5e956b052f67da8bdc9bef8abf3e",//Dai Stablecoin (DAI) 18
