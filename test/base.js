@@ -48,7 +48,6 @@ describe("core", function () {
 
   it("deploy base coins", async function () {
     [owner, owner2, owner3] = await ethers.getSigners(3);
-    //1.先铸一些币
     token = await ethers.getContractFactory("Token");
     ust = await token.deploy('ust', 'ust', 6, owner.address);
     await ust.mint(owner.address, ethers.BigNumber.from("1000000000000000000"));
@@ -68,7 +67,6 @@ describe("core", function () {
     await ve_underlying.mint(owner3.address, ethers.BigNumber.from("10000000000000000000000000"));
     late_reward = await token.deploy('LR', 'LR', 18, owner.address);
     await late_reward.mint(owner.address, ethers.BigNumber.from("20000000000000000000000000"));
-    //2.发行nft合约
     vecontract = await ethers.getContractFactory("contracts/ve.sol:ve");
     ve = await vecontract.deploy(ve_underlying.address);
 
@@ -77,7 +75,6 @@ describe("core", function () {
   });
 
   it("create lock", async function () {
-    //tokenId 1 创建4年锁仓
     await ve_underlying.approve(ve.address, ethers.BigNumber.from("500000000000000000"));
     await ve.create_lock(ethers.BigNumber.from("500000000000000000"), 4 * 365 * 86400);
     expect(await ve.balanceOfNFT(1)).to.above(ethers.BigNumber.from("495063075414519385"));
@@ -85,7 +82,6 @@ describe("core", function () {
   });
 
   it("increase lock", async function () {
-    //tokenId 1 增加锁仓数量
     await ve_underlying.approve(ve.address, ethers.BigNumber.from("500000000000000000"));
     await ve.increase_amount(1, ethers.BigNumber.from("500000000000000000"));
     await expect(ve.increase_unlock_time(1, 4 * 365 * 86400)).to.be.reverted;
@@ -104,7 +100,6 @@ describe("core", function () {
 
 
   it("steal NFT", async function () {
-    //锁仓的nft不可以转走
     await expect(ve.connect(owner2).transferFrom(owner.address, owner2.address, 1)).to.be.reverted
     await expect(ve.connect(owner2).approve(owner2.address, 1)).to.be.reverted
     await expect(ve.connect(owner2).merge(1, 2)).to.be.reverted
@@ -112,7 +107,6 @@ describe("core", function () {
 
 
   it("ve merge", async function () {
-    //合并tokenId的锁仓
     await ve_underlying.approve(ve.address, ethers.BigNumber.from("1000000000000000000"));
     await ve.create_lock(ethers.BigNumber.from("1000000000000000000"), 4 * 365 * 86400);
     expect(await ve.balanceOfNFT(2)).to.above(ethers.BigNumber.from("995063075414519385"));
@@ -146,7 +140,6 @@ describe("core", function () {
   });
 
   it("deploy BaseV1Factory and test pair length", async function () {
-    //部署BaseV1Factory合约
     const BaseV1Factory = await ethers.getContractFactory("BaseV1Factory");
     factory = await BaseV1Factory.deploy();
     await factory.deployed();
@@ -155,7 +148,6 @@ describe("core", function () {
   });
 
   it("deploy BaseV1Router and test factory address", async function () {
-    //部署Router
     const BaseV1Router = await ethers.getContractFactory("BaseV1Router01");
     router = await BaseV1Router.deploy(factory.address, owner.address);
     await router.deployed();
@@ -164,7 +156,6 @@ describe("core", function () {
   });
 
   it("deploy pair via BaseV1Factory owner", async function () {
-    //使用通过BaseV1Factory创建min的pair并添加流动性
     const ust_1 = ethers.BigNumber.from("1000000");
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const dai_1 = ethers.BigNumber.from("1000000000000000000");
@@ -181,7 +172,6 @@ describe("core", function () {
   });
 
   it("deploy pair via BaseV1Factory owner2", async function () {
-    //使用owner2添加流动性
     const ust_1 = ethers.BigNumber.from("1000000");
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const dai_1 = ethers.BigNumber.from("1000000000000000000");
@@ -351,7 +341,6 @@ describe("core", function () {
   });
 
   it("deploy BaseV1Minter", async function () {
-    //部署BaseV1Minter
     const BaseV1GaugeFactory = await ethers.getContractFactory("BaseV1GaugeFactory");
     gauges_factory = await BaseV1GaugeFactory.deploy();
     await gauges_factory.deployed();
@@ -368,7 +357,6 @@ describe("core", function () {
   });
 
   it("deploy BaseV1Minter", async function () {
-    //部署BaseV1Minter
     const VeDist = await ethers.getContractFactory("contracts/ve_dist.sol:ve_dist");
     ve_dist = await VeDist.deploy(ve.address);
     await ve_dist.deployed();
@@ -383,14 +371,12 @@ describe("core", function () {
   it("deploy BaseV1Factory gauge", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
 
-    //voter根据pair创建奖池
     await ve_underlying.approve(gauge_factory.address, ethers.BigNumber.from("1500000000000000000000000"));
     await gauge_factory.createGauge(pair.address);
     await gauge_factory.createGauge(pair2.address);
     await gauge_factory.createGauge(pair3.address);
     expect(await gauge_factory.gauges(pair.address)).to.not.equal(0x0000000000000000000000000000000000000000);
 
-    //XJTODO
     sr = await ethers.getContractFactory("StakingRewards");
     staking = await sr.deploy(pair.address, ve_underlying.address);
 
@@ -418,7 +404,6 @@ describe("core", function () {
     await pair2.approve(gauge2.address, pair_1000);
     await pair3.approve(gauge3.address, pair_1000);
     await gauge.deposit(pair_1000, 0);
-    //staking抵押lp
     await staking.stake(pair_1000);
     await gauge2.deposit(pair_1000, 0);
     await gauge3.deposit(pair_1000, 0);
