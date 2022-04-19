@@ -88,6 +88,7 @@ describe("minter", function () {
     expect(await ve.ownerOf(3)).to.equal("0x0000000000000000000000000000000000000000");
     await network.provider.send("evm_mine")
     expect(await ve_underlying.balanceOf(minter.address)).to.equal(ethers.BigNumber.from("19000000000000000000000000"));
+    await ve_underlying.mint(owner.address, ethers.BigNumber.from("10000000000000000000000000"));
   });
 
   it("minter weekly distribute", async function () {
