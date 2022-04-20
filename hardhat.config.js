@@ -1,6 +1,8 @@
 require("@nomiclabs/hardhat-waffle");
 require("@float-capital/solidity-coverage");
 
+const env = require("./constants");
+
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -35,7 +37,7 @@ module.exports = {
       url: "https://rpc.testnet.fantom.network/",
     },
     evmos_test: {
-      accounts: ["c0b61d8d53447f54341461f33e67b2aa0d347b96c2f18f525d9b9a8d8b014a63"],
+      accounts: [env.PRIVATE_KEY],
       chainId: 9000,
       gas: 3500000,
       gasPrice: "auto",

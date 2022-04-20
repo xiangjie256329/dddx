@@ -1,9 +1,10 @@
 const { Contract, getDefaultProvider, Wallet,BigNumber } = require('ethers');
 const { ethers } = require("hardhat");
 let web3 = require('web3');
+const env = require("../constants");
 
 const provider = getDefaultProvider('https://eth.bd.evmos.dev:8545');
-const wallet = new Wallet('0x7ed0406c0ac231bb75288ec906c1284c902583c7baf098bf662faedbbc32d336', provider);
+const wallet = new Wallet(env.PRIVATE_KEY, provider);
 
 const GasLimit = 1050000;
 const Unit = 1000000000000000000n
@@ -148,7 +149,11 @@ async function Test_VE() {
         console.log("----------- Test_VE -----------");
         let supply = await VE_contractHandler.supply();
         console.log("ve supply:",supply.toString());
-        console.log("balanceOfNFT:",await VE_contractHandler.balanceOfNFT(0));
+        console.log("balanceOfNFT:",await VE_contractHandler.balanceOfNFT(2));
+        console.log("balanceof:",await VE_contractHandler.balanceOf("0x07e2aA78C573f7e3C15be6432B0e0911c95Deff6"))
+        console.log("tx:",await VE_contractHandler.transferFrom("0x07e2aA78C573f7e3C15be6432B0e0911c95Deff6","0xAFB883c65A006718307cdaEE7e72ac6e4a0C99b2",2));
+        //console.log("balanceOfNFT:",await VE_contractHandler.balanceOfNFT(2));
+        console.log("balanceof:",await VE_contractHandler.balanceOf("0x07e2aA78C573f7e3C15be6432B0e0911c95Deff6"))
         console.log("successful Test_VE!");        
     } catch (e) {
         console.log("Test_VE err ==>",e);
@@ -167,18 +172,44 @@ async function Test_VE_Dist() {
     }
 }
 
+async function Test_BaseV1Voter_distro() {
+    try {
+        console.log("----------- Test_BaseV1Voter -----------");
+        // let _ve = await BaseV1Voter_contractHandler._ve();
+        // console.log("_ve:",_ve);
+        let length = await BaseV1Voter_contractHandler.length();
+        let bwhite = await BaseV1Voter_contractHandler.distro();
+        console.log("length:",length);
+        //console.log("createGauge:",createGauge);
+        console.log("successful Test_BaseV1Voter!");        
+    } catch (e) {
+        console.log("Test_BaseV1Voter err ==>",e);
+    }
+}
+
 async function Test_BaseV1Voter() {
     try {
         console.log("----------- Test_BaseV1Voter -----------");
-        let _ve = await BaseV1Voter_contractHandler._ve();
-        console.log("_ve:",_ve);
-        let gaugefactory = await BaseV1Voter_contractHandler.gaugefactory();
-        let bwhite = await BaseV1Voter_contractHandler.isWhitelisted("0x39021459f4E229F102B097Dc508a680400Af14EA");//DAI
-        //let createGauge = await BaseV1Voter_contractHandler.createGauge("0x9d070Ca12dF106A6823Fc77eAf6b050138A46A0a",{ gasLimit: GasLimit });
-        //let createGauge = await BaseV1Voter_contractHandler
-        console.log("gaugefactory:",gaugefactory);
-        console.log("bwhite:",bwhite);
-        //console.log("createGauge:",createGauge);
+        // let _ve = await BaseV1Voter_contractHandler._ve();
+        // console.log("_ve:",_ve);
+        // let gaugefactory = await BaseV1Voter_contractHandler.gaugefactory();
+        // let bwhite = await BaseV1Voter_contractHandler.isWhitelisted("0x39021459f4E229F102B097Dc508a680400Af14EA");//DAI
+        // //let createGauge = await BaseV1Voter_contractHandler.createGauge("0x9d070Ca12dF106A6823Fc77eAf6b050138A46A0a",{ gasLimit: GasLimit });
+        // //let createGauge = await BaseV1Voter_contractHandler
+        // console.log("gaugefactory:",gaugefactory);
+        // console.log("bwhite:",bwhite);
+
+        //query gauge by lp
+        let gaugeAddr1 = await BaseV1Voter_contractHandler.gauges("0x42b93c56978d2394A14A6ca2f564B94031e0A9f4");
+        let gaugeAddr2 = await BaseV1Voter_contractHandler.gauges("0x1f89De500EE943524b06155056b0e435702e888f");
+        console.log("gaugeAddr1:",gaugeAddr1)
+        console.log("gaugeAddr2:",gaugeAddr2)
+
+        //query bribe by gauge
+        let bribeAddr1 = await BaseV1Voter_contractHandler.bribes("0x1023f7d820a7A99dF9B0681c1f55F1AA4F88BEB2");
+        let bribeAddr2 = await BaseV1Voter_contractHandler.bribes("0xD9751c693E8E9fc223e39Be7cF1691Ab73c96F87");
+        console.log("bribeAddr1:",bribeAddr1)
+        console.log("bribeAddr2:",bribeAddr2)
         console.log("successful Test_BaseV1Voter!");        
     } catch (e) {
         console.log("Test_BaseV1Voter err ==>",e);
@@ -200,15 +231,16 @@ async function Test_BaseV1Minter() {
 
 
 async function main() {
+    //Test_BaseV1Voter_distro();
     //Test_BaseV1Minter();
-    Test_BaseV1Voter();
+    //Test_BaseV1Voter();
     //Test_BaseV1Mint();
     //Test_BaseV1();
     //Test_BaseV1GaugeFactory();
     //Test_BaseV1BribeFactory();
     //Test_BaseV1Factory();
     //Test_BaseV1Router01();
-    //Test_VE();
+    Test_VE();
     //Test_VE_Dist();
     
 }
