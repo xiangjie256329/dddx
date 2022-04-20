@@ -9,9 +9,9 @@ async function main() {
   const Ve_dist = await ethers.getContractFactory("contracts/ve_dist.sol:ve_dist");
   const BaseV1Voter = await ethers.getContractFactory("BaseV1Voter");
   const BaseV1Minter = await ethers.getContractFactory("BaseV1Minter");
+  const dddx_library = await ethers.getContractFactory("dddx_library");
 
   const wftmAddr = "0xd8Beb25CAeb2E4c537857E015921e41afd7f2C7b"
-
   const token = await Token.deploy();
   console.log("BaseV1 address:",token.address)
   const gauges = await Gauges.deploy();
@@ -22,6 +22,8 @@ async function main() {
   console.log("BaseV1Factory address:",core.address)
   const factory = await Factory.deploy(core.address, wftmAddr,{gasLimit:GasLimit});
   console.log("BaseV1Router01 address:",factory.address)
+  const lib = await dddx_library.deploy(factory.address,{gasLimit:GasLimit})
+  console.log("lib:",lib.address);
   const ve = await Ve.deploy(token.address,{gasLimit:GasLimit});
   console.log("contracts/ve.sol:ve address:",ve.address)
   const ve_dist = await Ve_dist.deploy(ve.address,{gasLimit:GasLimit});
@@ -38,35 +40,35 @@ async function main() {
   const ve_distResult = await ve_dist.setDepositor(minter.address);
   console.log("ve_distResult:",ve_distResult.hash)
   const initResult = await voter.initialize([
-    wftmAddr, //
-    "0x04068da6c83afcfa0e13ba15a6696662335d5b75",//USD Coin (USDC) 6
-    "0x321162Cd933E2Be498Cd2267a90534A804051b11",//Bitcoin (BTC) 8
-    "0x8d11ec38a3eb5e956b052f67da8bdc9bef8abf3e",//Dai Stablecoin (DAI) 18
-    "0x82f0b8b456c1a451378467398982d4834b6829c1",//Magic Internet Money (MIM) 18
-    "0xdc301622e621166bd8e82f2ca0a26c13ad0be355",//Frax (FRAX) 18
-    "0x1E4F97b9f9F913c46F1632781732927B9019C68b",//Curve DAO (CRV) 18
-    "0x29b0Da86e484E1C0029B56e817912d778aC0EC69",//yearn.finance (YFI) 18
-    "0xae75A438b2E0cB8Bb01Ec1E1e376De11D44477CC",//Sushi (SUSHI) 18
-    "0x7d016eec9c25232b01f23ef992d98ca97fc2af5a",//Frax Share (FXS) 18
-    "0x468003b688943977e6130f4f68f23aad939a1040",//Spell Token (SPELL) 18
-    "0xe55e19fb4f2d85af758950957714292dac1e25b2",//Synapse (SYN) 18
-    "0x4cdf39285d7ca8eb3f090fda0c069ba5f4145b37",//TSHARE (TSHARE) 18
-    "0x6c021ae822bea943b2e66552bde1d2696a53fbb7",//TOMB (TOMB) 18
-    "0x2a5062d22adcfaafbd5c541d4da82e4b450d4212",//Keep3r (KP3R) 18
-    "0x841fad6eae12c286d1fd18d1d525dffa75c7effe",//SpookyToken (BOO) 18
-    "0x5C4FDfc5233f935f20D2aDbA572F770c2E377Ab0",//Hector (HEC) 9
-    "0xad996a45fd2373ed0b10efa4a8ecb9de445a4302",//AlpacaToken (ALPACA) 18
-    "0xd8321aa83fb0a4ecd6348d4577431310a6e0814d",//Geist.Finance Protocol Token (GEIST) 18
-    "0x5cc61a78f164885776aa610fb0fe1257df78e59b",//SpiritSwap Token (SPIRIT) 18
-    "0x10b620b2dbac4faa7d7ffd71da486f5d44cd86f9",//Liquid Driver (LQDR) 18
-    "0xe0654C8e6fd4D733349ac7E09f6f23DA256bF475",//Scream (SCREAM) 18
-    "0x85dec8c4b2680793661bca91a8f129607571863d",//PaintSwap Token (BRUSH) 18
-    "0x74b23882a30290451A17c44f4F05243b6b58C76d",//Ethereum (ETH) 18
-    "0xf16e81dce15b08f326220742020379b855b87df9",//IceToken (ICE) 18
-    "0x9879abdea01a879644185341f7af7d8343556b7a",//TrueUSD (TUSD) 18
-    "0x00a35FD824c717879BF370E70AC6868b95870Dfb",//IronBank (IB) 18
-    "0xc5e2b037d30a390e62180970b3aa4e91868764cd",//Tarot (TAROT) 18
-    "0x10010078a54396F62c96dF8532dc2B4847d47ED3"], //Hundred Finance (HND) 18
+    "0xd8Beb25CAeb2E4c537857E015921e41afd7f2C7b",
+    "0x39021459f4E229F102B097Dc508a680400Af14EA",//USD Coin (USDC) 6
+    "0xEd3d9618A850C87D3C22658469357130200e1bb8",//Bitcoin (BTC) 8
+    "0xbe1057099d72DEA40b2ed2Ab16e6B567B36F74c4",//Dai Stablecoin (DAI) 18
+    "0xa838762223280019Ffbce09c33e1244516e4D285",//Magic Internet Money (MIM) 18
+    "0x49FeCF7ec4787039ff89Ec22cBC0B31efaeB00B5",//Frax (FRAX) 18
+    "0x5eAC8924030EC8eac7Fa420BDB0A04079A118245",//Curve DAO (CRV) 18
+    "0x1d1D7C7ADc244028c94eF9d43267026EBaDFD589",//yearn.finance (YFI) 18
+    "0x81b1589E50DcC5e321B4e774C08100e904D58C9E",//Sushi (SUSHI) 18
+    "0x16237b7cB4c9c26D5B9455D21FaB52Bb288cAad0",//Frax Share (FXS) 18
+    "0x1269E1F8f9190ca17778cC4FF9Acf9B6a8B83eEF",//Spell Token (SPELL) 18
+    "0xCaf5394258290268Cbd9047bb68c6165877bb887",//Synapse (SYN) 18
+    "0x5118df881D8bd60A5B2434AA6413c160744CB541",//TSHARE (TSHARE) 18
+    "0x150277847A359F2c865e4bcd321D634a4B19dd1b",//TOMB (TOMB) 18
+    "0x2C23281e674B4907F09A91303aF25A3a7d17Af7c",//Keep3r (KP3R) 18
+    "0xC3A263D2bdC6b3e24410bc1A38d91B31302F1c6d",//SpookyToken (BOO) 18
+    "0x95115BeCe73A047B567104C473d78d0011cc3053",//Hector (HEC) 9
+    "0x5b798F01518fD182A4Dc6CFFeC9BAeEbe2C342A3",//AlpacaToken (ALPACA) 18
+    "0x8c2e337f4d4e1C1aff0E48101D773A4B2A3E5DA6",//Geist.Finance Protocol Token (GEIST) 18
+    "0x09Aed1BB0C3635B16C7C1BD7b9D70b5A5D72834d",//SpiritSwap Token (SPIRIT) 18
+    "0x4E1E9379ab18Af96045fC44478365e5C098AA2c2",//Liquid Driver (LQDR) 18
+    "0x48e44B093D46aF9D26a843582BAC7771fC0b4C6A",//Scream (SCREAM) 18
+    "0xE5D864b7297083A554d745Fa7175d15eEE5De5Ee",//PaintSwap Token (BRUSH) 18
+    "0x0d9D9FA340AeB3c6e159d58Cea3195b26dA4C586",//Ethereum (ETH) 18
+    "0x07A10226b1a7586C53a183C424f415DAcD4B4555",//IceToken (ICE) 18
+    "0xD0474E681eFDaB2C7B6F156a331FD4801c6393E2",//TrueUSD (TUSD) 18
+    "0x05aF9eE4e106A75ca948c59E45e93c72F2A83143",//IronBank (IB) 18
+    "0x440B158Add4fb0d53Bc5218455984fCc051f2f44",//Tarot (TAROT) 18
+    "0xd02c98EBdcDE6b62179b045C424c7Ba41a9dE9Ce"], //Hundred Finance (HND) 18
     minter.address);
   console.log("initResult:",initResult.hash);  
   const minterInitResult = await minter.initialize([

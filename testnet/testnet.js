@@ -9,47 +9,50 @@ const GasLimit = 1050000;
 const Unit = 1000000000000000000n
 let unit = ethers.BigNumber.from("1000000000000000000");
 
-const BaseV1_contractAddr = "0x3118A3152bc99f6f8d7eFcd7E90C3d80C033ACab";
+const BaseV1_contractAddr = "0xDF794699EEf4D23A2E064d1d431F9BaC34AFc1f0";
+const BaseV1GaugeFactory_contractAddr = "0x6676F1834c394b18Ac85A0166403fE3188C61ce7";
+const BaseV1BribeFactory_contractAddr = "0xd9f82c41E7DE6b3B72Bf38B97BAaAc5aF957F4bd";
+const BaseV1Factory_contractAddr = "0xaa3cBD0Abd62cdC283b1B1536050387070534A22";
+const BaseV1Router01_contractAddr = "0xFE1ACbAFEccb2AEBd1253F333E6631316298EE79";
+const VE_contractAddr = "0x053A00745AAFeFCDc9AF7dF5F6271C45B656f6C9";
+const VE_dist_contractAddr = "0x8F22b40ceBc5c9010Bb9bD83A3E39D584E6B773c";
+const BaseV1Voter_contractAddr = "0xD72f9fdFF71FD8ae4001133eca63F10c789C2B3B";
+const BaseV1Minter_contractAddr = "0x57586873100C519FB1ACDc5E76a02539bAc83731";
+
 let BaseV1_json = require('../artifacts/contracts/BaseV1-token.sol/BaseV1.json');
 const BaseV1_abi = BaseV1_json.abi;
 const BaseV1_contractHandler = new Contract(BaseV1_contractAddr, BaseV1_abi, wallet);
 
-const BaseV1GaugeFactory_contractAddr = "0xF62e82D7C293a996763784DA0D1db066032C9b41";
+
 let BaseV1GaugeFactory_json = require('../artifacts/contracts/BaseV1-gauges.sol/BaseV1GaugeFactory.json');
 const BaseV1GaugeFactory_abi = BaseV1GaugeFactory_json.abi;
 const BaseV1GaugeFactory_contractHandler = new Contract(BaseV1GaugeFactory_contractAddr, BaseV1GaugeFactory_abi, wallet);
 
-const BaseV1BribeFactory_contractAddr = "0xA5b1624d1F9a317f9D5FC963628A2224c284A053";
+
 let BaseV1BribeFactory_json = require('../artifacts/contracts/BaseV1-bribes.sol/BaseV1BribeFactory.json');
 const BaseV1BribeFactory_abi = BaseV1BribeFactory_json.abi;
 const BaseV1BribeFactory_contractHandler = new Contract(BaseV1BribeFactory_contractAddr, BaseV1BribeFactory_abi, wallet);
 
-const BaseV1Factory_contractAddr = "0xd1ad2Eac761C47d898D6d15e7AE36B5C2168CC55";
 let BaseV1Factory_json = require('../artifacts/contracts/BaseV1-core.sol/BaseV1Factory.json');
 const BaseV1Factory_abi = BaseV1Factory_json.abi;
 const BaseV1Factory_contractHandler = new Contract(BaseV1Factory_contractAddr, BaseV1Factory_abi, wallet);
 
-const BaseV1Router01_contractAddr = "0x64069685DEe0Aff487326f4D5dF80a48F0CC4226";
 let BaseV1Router01_json = require('../artifacts/contracts/BaseV1-periphery.sol/BaseV1Router01.json');
 const BaseV1Router01_abi = BaseV1Router01_json.abi;
 const BaseV1Router01_contractHandler = new Contract(BaseV1Router01_contractAddr, BaseV1Router01_abi, wallet);
 
-const VE_contractAddr = "0x9B7047aa4caE8f7Bf3a2556E23431F5e5f851f61";
 let ve_json = require('../artifacts/contracts/ve.sol/ve.json');
 const ve_abi = ve_json.abi;
 const VE_contractHandler = new Contract(VE_contractAddr, ve_abi, wallet);
 
-const VE_dist_contractAddr = "0x29c11FF8cD76B7179AcCb725370E91C73E5171d2";
 let ve_dist_json = require('../artifacts/contracts/ve_dist.sol/ve_dist.json');
 const ve_dist_abi = ve_dist_json.abi;
 const VE_dist_contractHandler = new Contract(VE_dist_contractAddr, ve_dist_abi, wallet);
 
-const BaseV1Voter_contractAddr = "0x832951c4cF40f7AEC1B3077683debF537A49C148";
 let BaseV1Voter_json = require('../artifacts/contracts/BaseV1-voter.sol/BaseV1Voter.json');
 const BaseV1Voter_abi = BaseV1Voter_json.abi;
 const BaseV1Voter_contractHandler = new Contract(BaseV1Voter_contractAddr, BaseV1Voter_abi, wallet);
 
-const BaseV1Minter_contractAddr = "0x33900c2e8aabBacD790Ec6e33F9e2D8Dd9fC6928";
 let BaseV1Minter_json = require('../artifacts/contracts/BaseV1-minter.sol/BaseV1Minter.json');
 const BaseV1Minter_abi = BaseV1Minter_json.abi;
 const BaseV1Minter_contractHandler = new Contract(BaseV1Minter_contractAddr, BaseV1Minter_abi, wallet);
@@ -127,6 +130,19 @@ async function Test_BaseV1Router01() {
     }
 }
 
+async function Test_BaseV1Router01_ADD_Liquid() {
+    try {
+        console.log("----------- Test_BaseV1Router01 -----------");
+        let factory = await BaseV1Router01_contractHandler.factory();
+        console.log("factory:",factory);
+        let wftm = await BaseV1Router01_contractHandler.wftm();
+        console.log("wftm:",wftm);
+        console.log("successful Test_BaseV1Router01!");        
+    } catch (e) {
+        console.log("Test_BaseV1Router01 err ==>",e);
+    }
+}
+
 async function Test_VE() {
     try {
         console.log("----------- Test_VE -----------");
@@ -157,9 +173,12 @@ async function Test_BaseV1Voter() {
         let _ve = await BaseV1Voter_contractHandler._ve();
         console.log("_ve:",_ve);
         let gaugefactory = await BaseV1Voter_contractHandler.gaugefactory();
-        let bwhite = await BaseV1Voter_contractHandler.isWhitelisted("0xEd3d9618A850C87D3C22658469357130200e1bb8");
+        let bwhite = await BaseV1Voter_contractHandler.isWhitelisted("0x39021459f4E229F102B097Dc508a680400Af14EA");//DAI
+        //let createGauge = await BaseV1Voter_contractHandler.createGauge("0x9d070Ca12dF106A6823Fc77eAf6b050138A46A0a",{ gasLimit: GasLimit });
+        //let createGauge = await BaseV1Voter_contractHandler
         console.log("gaugefactory:",gaugefactory);
         console.log("bwhite:",bwhite);
+        //console.log("createGauge:",createGauge);
         console.log("successful Test_BaseV1Voter!");        
     } catch (e) {
         console.log("Test_BaseV1Voter err ==>",e);
